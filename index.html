@@ -1,45 +1,331 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>火锅应用程序</title>
-    <style>
-        body {font-family: "Microsoft YaHei", sans-serif; background: #fff5f0; margin: 0; color: #333;}
-        header {background: #d32f2f; color: white; text-align: center; padding: 40px 20px;}
-        header h1 {margin: 0; font-size: 36px;}
-        .container {max-width: 800px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
-        h2 {color: #d32f2f; border-bottom: 2px solid #ffcdd2; padding-bottom: 10px;}
-        .menu-item {display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px dashed #eee;}
-        .item-name {font-weight: bold; font-size: 18px;}
-        .item-desc {color: #777; font-size: 14px; margin-top: 5px;}
-        .item-price {color: #d32f2f; font-weight: bold; font-size: 18px;}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>海底捞火锅 · 扫码点餐</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-tap-highlight-color:transparent}
+  body{background:#f5f5f5;color:#333;padding-bottom:120px;padding-top:env(safe-area-inset-top)}
+  ::-webkit-scrollbar{display:none}
+  
+  /* 顶部导航 */
+  .nav{position:fixed;top:0;left:0;right:0;height:44px;background:#d94a36;color:#fff;display:flex;align-items:center;justify-content:center;z-index:100;font-size:17px;font-weight:bold;padding-top:env(safe-area-inset-top)}
+  .nav span{opacity:.8;font-size:13px;font-weight:normal;margin-left:8px}
+  
+  /* 桌号/排号栏 */
+  .top-bar{background:#fff;margin:10px;border-radius:12px;padding:15px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+  .table-info{font-size:16px;font-weight:bold}
+  .table-info small{color:#999;font-size:12px;font-weight:normal;display:block;margin-top:4px}
+  .btn{background:#d94a36;color:#fff;border:none;border-radius:20px;padding:8px 16px;font-size:13px}
+  .btn-outline{background:#fff;color:#d94a36;border:1px solid #d94a36}
+  
+  /* 排号面板 */
+  .panel{background:#fff;margin:10px;border-radius:12px;padding:15px;display:none}
+  .panel.show{display:block}
+  .panel h3{font-size:16px;margin-bottom:12px}
+  .people{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:15px}
+  .tag{padding:8px 16px;border:1px solid #ddd;border-radius:20px;font-size:13px;background:#fff;color:#666}
+  .tag.on{background:#d94a36;color:#fff;border-color:#d94a36}
+  .num-box{text-align:center;padding:20px 0;display:none}
+  .num-box h1{color:#d94a36;font-size:48px;margin:10px 0}
+  .wait-bar{height:6px;background:#eee;border-radius:3px;margin:15px 0;overflow:hidden}
+  .wait-inner{height:100%;background:#d94a36;width:10%;transition:.5s}
+  
+  /* 分类标签 */
+  .cats{display:flex;background:#fff;margin:10px;border-radius:12px;padding:5px;overflow-x:auto}
+  .cat{padding:8px 16px;font-size:14px;color:#666;white-space:nowrap;border-radius:20px}
+  .cat.on{background:#fdecea;color:#d94a36;font-weight:bold}
+  
+  /* 锅底专区 */
+  .pot-area{display:none;padding:10px;gap:10px}
+  .pot-area.show{display:grid;grid-template-columns:1fr 1fr}
+  .pot-card{background:#fff;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+  .pot-card .emoji{font-size:40px;margin:10px 0}
+  .pot-card h4{font-size:15px;margin-bottom:4px}
+  .pot-card p{font-size:12px;color:#999;margin-bottom:8px}
+  .pot-card .price{color:#d94a36;font-weight:bold;font-size:16px}
+  .select-pot{margin-top:8px;padding:6px 0;background:#fdecea;color:#d94a36;border-radius:20px;font-size:13px;cursor:pointer}
+  .select-pot.on{background:#d94a36;color:#fff}
+  
+  /* 菜品列表 */
+  .list{padding:0 10px}
+  .dish{background:#fff;border-radius:12px;margin-bottom:10px;padding:12px;display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
+  .dish-pic{width:60px;height:60px;background:#f5f5f5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin-right:12px;flex-shrink:0}
+  .dish-info{flex:1;min-width:0}
+  .dish-name{font-size:15px;font-weight:bold;margin-bottom:4px}
+  .dish-desc{font-size:12px;color:#999;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dish-price{color:#d94a36;font-weight:bold;font-size:16px}
+  .half-tag{font-size:11px;color:#d94a36;border:1px solid #d94a36;border-radius:3px;padding:1px 4px;margin-left:4px}
+  .dish-act{display:flex;align-items:center;margin-left:8px}
+  .step-btn{width:26px;height:26px;border-radius:50%;border:1px solid #d94a36;background:#fff;color:#d94a36;font-size:16px;line-height:24px;text-align:center;cursor:pointer}
+  .step-btn.del{color:#999;border-color:#ccc}
+  .num{margin:0 8px;font-size:14px;min-width:16px;text-align:center}
+  
+  /* 底部导航 */
+  .tabbar{position:fixed;bottom:0;left:0;right:0;height:50px;background:#fff;border-top:1px solid #eee;display:flex;z-index:99;padding-bottom:env(safe-area-inset-bottom)}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:#999;cursor:pointer}
+  .tab.on{color:#d94a36}
+  .tab-icon{font-size:22px;margin-bottom:2px}
+  
+  /* 购物车条 */
+  .cart-bar{position:fixed;bottom:60px;left:15px;right:15px;background:#2a2a2a;color:#fff;border-radius:30px;padding:12px 20px;display:none;justify-content:space-between;align-items:center;z-index:98;box-shadow:0 4px 15px rgba(0,0,0,0.15)}
+  .cart-bar.show{display:flex}
+  .cart-icon{position:relative;font-size:24px}
+  .cart-badge{position:absolute;top:-6px;right:-10px;background:#d94a36;color:#fff;font-size:11px;border-radius:10px;padding:2px 6px;min-width:18px;text-align:center}
+  .cart-total{font-size:16px;font-weight:bold}
+  .cart-btn{background:#d94a36;color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:14px}
+  
+  /* 遮罩与弹窗 */
+  .mask{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:200}
+  .modal{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:20px;z-index:201;display:none;max-height:70vh;overflow-y:auto;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  .modal.show{display:block}
+  .modal h3{margin-bottom:15px;font-size:17px}
+  .cart-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f0f0f0}
+  .cart-item-name{font-size:14px}
+  .cart-item-price{color:#d94a36;font-weight:bold}
+  .submit-box{padding:15px 0 0}
+  .submit-btn{width:100%;background:#d94a36;color:#fff;border:none;border-radius:25px;padding:14px;font-size:16px;font-weight:bold}
+  
+  /* 首页欢迎 */
+  .welcome{background:linear-gradient(135deg,#d94a36,#e76a52);color:#fff;margin:10px;border-radius:12px;padding:20px;text-align:center}
+  .welcome h2{font-size:22px;margin-bottom:8px}
+  .welcome p{font-size:13px;opacity:.9}
+</style>
 </head>
 <body>
-    <header>
-        <h1>🔥 火锅应用程序 🔥</h1>
-        <p>正宗好味道，麻辣鲜香</p>
-    </header>
-    <div class="container">
-        <h2>招牌锅底</h2>
-        <div class="menu-item">
-            <div><div class="item-name">经典牛油红汤锅</div><div class="item-desc">麻辣醇厚</div></div>
-            <div class="item-price">¥68</div>
-        </div>
-        <div class="menu-item">
-            <div><div class="item-name">大骨浓汤鸳鸯锅</div><div class="item-desc">一半红汤一半清汤</div></div>
-            <div class="item-price">¥78</div>
-        </div>
-        <h2>必点鲜菜</h2>
-        <div class="menu-item">
-            <div><div class="item-name">鲜切毛肚</div><div class="item-desc">七上八下，脆嫩</div></div>
-            <div class="item-price">¥48</div>
-        </div>
-        <div class="menu-item">
-            <div><div class="item-name">手打鲜虾滑</div><div class="item-desc">Q弹鲜美</div></div>
-            <div class="item-price">¥38</div>
-        </div>
-    </div>
+
+<div class="nav">海底捞火锅 <span id="navSub">· 扫码点餐</span></div>
+
+<!-- 桌号/排号 -->
+<div class="top-bar">
+  <div class="table-info" id="tbInfo">📍 <span id="tbText">扫描桌码中...</span><small id="tbSub">未绑定桌号</small></div>
+  <button class="btn btn-outline" onclick="showPanel('queue')">排号取餐</button>
+</div>
+
+<!-- 欢迎语 -->
+<div class="welcome" id="welcome">
+  <h2>🔥 欢迎光临</h2>
+  <p>正宗好味道，麻辣鲜香 · 祝您用餐愉快</p>
+</div>
+
+<!-- 排号面板 -->
+<div class="panel" id="queuePanel">
+  <h3>📝 排号取餐</h3>
+  <div class="people">
+    <div class="tag" onclick="selP(this,1)">1人</div>
+    <div class="tag on" onclick="selP(this,2)">2人</div>
+    <div class="tag" onclick="selP(this,3)">3人</div>
+    <div class="tag" onclick="selP(this,4)">4人</div>
+    <div class="tag" onclick="selP(this,5)">5人</div>
+    <div class="tag" onclick="selP(this,6)">6人以上</div>
+  </div>
+  <button class="btn" style="width:100%;padding:12px" onclick="takeNum()">确认取号</button>
+  <div class="num-box" id="numBox">
+    <p>您的号码是</p>
+    <h1 id="myNo">A00</h1>
+    <p>前方还有 <span id="wait">12</span> 桌</p>
+    <div class="wait-bar"><div class="wait-inner" id="prog"></div></div>
+    <p style="font-size:12px;color:#999;margin-top:10px">到号将震动提醒</p>
+  </div>
+</div>
+
+<!-- 分类 -->
+<div class="cats" id="cats">
+  <div class="cat on" onclick="swCat(this,'pot')">🔥 锅底</div>
+  <div class="cat" onclick="swCat(this,'meat')">🥩 荤菜</div>
+  <div class="cat" onclick="swCat(this,'veg')">🥬 素菜</div>
+  <div class="cat" onclick="swCat(this,'sid')">🍢 小吃</div>
+  <div class="cat" onclick="swCat(this,'drk')">🥤 饮品</div>
+</div>
+
+<!-- 锅底四宫格 -->
+<div class="pot-area show" id="potArea">
+  <div class="pot-card" onclick="pickPot(this,'经典牛油红汤',68)">
+    <div class="emoji">🌶️</div><h4>经典牛油红汤</h4><p>麻辣醇厚</p><div class="price">¥68</div>
+    <div class="select-pot">选择</div>
+  </div>
+  <div class="pot-card" onclick="pickPot(this,'大骨浓汤鸳鸯',78)">
+    <div class="emoji">🍲</div><h4>大骨浓汤鸳鸯</h4><p>一半红汤一半清汤</p><div class="price">¥78</div>
+    <div class="select-pot">选择</div>
+  </div>
+  <div class="pot-card" onclick="pickPot(this,'番茄锅底',68)">
+    <div class="emoji">🍅</div><h4>番茄锅底</h4><p>浓郁酸甜</p><div class="price">¥68</div>
+    <div class="select-pot">选择</div>
+  </div>
+  <div class="pot-card" onclick="pickPot(this,'菌汤锅底',68)">
+    <div class="emoji">🍄</div><h4>菌汤锅底</h4><p>鲜香养生</p><div class="price">¥68</div>
+    <div class="select-pot">选择</div>
+  </div>
+</div>
+
+<!-- 菜品列表 -->
+<div class="list" id="list"></div>
+
+<!-- 购物车条 -->
+<div class="cart-bar" id="cartBar">
+  <div class="cart-icon" onclick="openCart()">🛒<span class="cart-badge" id="cnt">0</span></div>
+  <div class="cart-total">¥<span id="total">0</span></div>
+  <button class="cart-btn" onclick="openCart()">去结算</button>
+</div>
+
+<!-- 底部TabBar -->
+<div class="tabbar">
+  <div class="tab on" onclick="goTab('home')"><div class="tab-icon">🏠</div>首页</div>
+  <div class="tab" onclick="goTab('menu')"><div class="tab-icon">📋</div>点餐</div>
+  <div class="tab" onclick="goTab('cart')"><div class="tab-icon">🛒</div>购物车</div>
+  <div class="tab" onclick="goTab('me')"><div class="tab-icon">👤</div>我的</div>
+</div>
+
+<!-- 购物车弹窗 -->
+<div class="mask" id="mask" onclick="closeCart()"></div>
+<div class="modal" id="modal">
+  <h3>🛒 已选菜品</h3>
+  <div id="cartList"></div>
+  <div class="submit-box">
+    <button class="submit-btn" onclick="submitOrder()">提交订单 ¥<span id="modalTotal">0</span></button>
+  </div>
+</div>
+
+<script>
+// 模拟扫码：支持 ?table=8 参数，模拟海底捞扫桌码
+const urlParams=new URLSearchParams(location.search)
+const tb=urlParams.get('table')
+let tableNo=tb?tb:''
+if(tableNo){
+  document.getElementById('tbText').innerHTML=`${tableNo}号桌`
+  document.getElementById('tbSub').textContent='已绑定桌号，可开始点餐'
+  document.getElementById('welcome').style.display='none'
+}else{
+  document.getElementById('tbText').innerHTML='未扫码'
+  document.getElementById('tbSub').textContent='请扫描桌码或排号'
+}
+
+// 菜单数据（含半份）
+const MENU={
+  meat:[
+    {n:'鲜切毛肚',d:'七上八下，脆嫩',p:48,h:28,e:'🥩'},
+    {n:'手打鲜虾滑',d:'Q弹鲜美',p:38,h:22,e:'🦐'},
+    {n:'肥牛卷',d:'肉质鲜嫩',p:42,h:25,e:'🐮'},
+    {n:'嫩牛肉',d:'滑嫩爽口',p:36,h:20,e:'🥩'},
+    {n:'鸭肠',d:'脆爽可口',p:32,h:18,e:'🐦'}
+  ],
+  veg:[
+    {n:'鸭血',d:'嫩滑入味',p:18,e:'🩸'},
+    {n:'土豆片',d:'粉糯香甜',p:12,e:'🥔'},
+    {n:'生菜',d:'清爽解腻',p:14,e:'🥬'},
+    {n:'金针菇',d:'吸满汤汁',p:16,e:'🍄'},
+    {n:'豆腐皮',d:'豆香浓郁',p:15,e:'🥡'}
+  ],
+  sid:[
+    {n:'红糖糍粑',d:'外酥里糯',p:22,e:'🍡'},
+    {n:'炸酥肉',d:'椒香酥脆',p:28,e:'🍖'},
+    {n:'小油条',d:'现炸现卖',p:18,e:'🥖'}
+  ],
+  drk:[
+    {n:'酸梅汤',d:'解辣神器',p:18,e:'🥤'},
+    {n:'唯怡豆奶',d:'经典搭配',p:12,e:'🧃'},
+    {n:'可乐',d:'冰镇畅爽',p:10,e:'🥤'}
+  ]
+}
+
+let cart={},curCat='pot',people=2,potSelected=''
+
+function swCat(el,c){
+  document.querySelectorAll('.cat').forEach(x=>x.classList.remove('on'))
+  el.classList.add('on')
+  curCat=c
+  document.getElementById('potArea').classList.toggle('show',c==='pot')
+  document.getElementById('list').style.display=c==='pot'?'none':'block'
+  if(c!=='pot')renderList(c)
+}
+function renderList(c){
+  document.getElementById('list').innerHTML=MENU[c].map(m=>{
+    const k=m.n,num=cart[k]?.num||0,half=cart[k]?.half
+    let price=m.p,label=''
+    if(m.h&&num>0){
+      price=half?m.h:m.p;label=half?'<span class="half-tag">半份</span>':''
+    }
+    return `<div class="dish">
+      <div class="dish-pic">${m.e}</div>
+      <div class="dish-info"><div class="dish-name">${m.n}${label}</div><div class="dish-desc">${m.d}</div><div class="dish-price">¥${price}</div></div>
+      <div class="dish-act">
+        ${m.h&&num>0?<span style="font-size:11px;color:#d94a36;margin-right:4px" onclick="toggleHalf('${k}',${m.p},${m.h})">${half?'整份':'半份'}</span>:''}
+        ${num?`<button class="step-btn del" onclick="chg('${k}',-1,${m.p},${m.h||0})">-</button><span class="num">${num}</span>`:''}
+        <button class="step-btn" onclick="chg('${k}',1,${m.p},${m.h||0})">+</button>
+      </div></div>`
+  }).join('')
+}
+function chg(k,step,p,h){
+  if(!cart[k])cart[k]={num:0,half:false,p}
+  cart[k].num+=step
+  if(cart[k].num<=0)delete cart[k]
+  if(curCat!=='pot')renderList(curCat)
+  updCart()
+}
+function toggleHalf(k,p,h){
+  if(!cart[k])return
+  cart[k].half=!cart[k].half
+  renderList(curCat)
+  updCart()
+}
+function pickPot(el,n,p){
+  document.querySelectorAll('.pot-card').forEach(x=>x.querySelector('.select-pot').classList.remove('on'))
+  el.querySelector('.select-pot').classList.add('on')
+  potSelected=n
+  cart['__pot']={num:1,p,half:false,p:p,name:n}
+  updCart()
+}
+function updCart(){
+  let c=0,t=0
+  for(const k in cart){c+=(k==='__pot'?1:cart[k].num);t+=getItemPrice(k)}
+  document.getElementById('cnt').textContent=c
+  document.getElementById('total').textContent=t
+  document.getElementById('modalTotal').textContent=t
+  document.getElementById('cartBar').classList.toggle('show',c>0)
+}
+function getItemPrice(k){
+  const it=cart[k]
+  if(k==='__pot')return it.p
+  const base=it.half?it.h||it.p/2:it.p
+  return base*it.num
+}
+function openCart(){
+  let h=''
+  for(const k in cart){
+    if(k==='__pot')h+=`<div class="cart-item"><span class="cart-item-name">🔥 ${cart[k].name}</span><span class="cart-item-price">¥${cart[k].p}</span></div>`
+    else h+=`<div class="cart-item"><span class="cart-item-name">${k}${cart[k].half?'<span class="half-tag">半</span>':''} ×${cart[k].num}</span><span class="cart-item-price">¥${getItemPrice(k)}</span></div>`
+  }
+  document.getElementById('cartList').innerHTML=h||'<p style="color:#999">购物车空空如也</p>'
+  document.getElementById('mask').style.display='block'
+  document.getElementById('modal').classList.add('show')
+}
+function closeCart(){document.getElementById('mask').style.display='none';document.getElementById('modal').classList.remove('show')}
+function submitOrder(){
+  if(!tableNo)alert('请先扫描桌码绑定桌号')
+  else alert(`✅ 下单成功！\n桌号：${tableNo}\n合计：¥${document.getElementById('total').textContent}\n后厨已开始准备，请稍候~`)
+  cart={};potSelected='';updCart();closeCart();renderList(curCat)
+}
+function showPanel(t){document.getElementById('queuePanel').classList.add('show');document.getElementById('welcome').style.display='none'}
+function selP(el,n){document.querySelectorAll('.people .tag').forEach(x=>x.classList.remove('on'));el.classList.add('on');people=n}
+function takeNum(){
+  document.getElementById('myNo').textContent='A'+Math.floor(Math.random()*90+10)
+  document.getElementById('numBox').style.display='block'
+  let w=12,pg=10
+  clearInterval(window.t)
+  window.t=setInterval(()=>{if(w>0){w--;document.getElementById('wait').textContent=w;pg+=8;document.getElementById('prog').style.width=pg+'%'}else{clearInterval(window.t);if(navigator.vibrate)navigator.vibrate(200);alert('📢 请到前台就餐，您的号码已到！')}},(8000))
+}
+function goTab(t){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'))
+  event.currentTarget.classList.add('on')
+  if(t==='cart')openCart()
+  if(t==='menu')swCat(document.querySelectorAll('.cat')[1],'meat')
+  if(t==='home'){document.getElementById('queuePanel').classList.remove('show');document.getElementById('welcome').style.display='block';swCat(document.querySelectorAll('.cat')[0],'pot')}
+}
+
+// 初始化
+renderList('meat')
+document.getElementById('list').style.display='none'
+</script>
 </body>
 </html>
